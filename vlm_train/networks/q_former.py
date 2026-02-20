@@ -25,10 +25,10 @@ def create_attention_mask(
     img_self = torch.ones(B, I, I, device=device, dtype=torch.bool)  # [B, I, I]
     text_self = torch.ones(B, T, T, device=device, dtype=torch.bool)  # [B, T, T]
 
-    if mode == "multi_modal_causal":
+    if mode == "multi_modal_causal":  # Q-former will learn image and text embeddings together
         text_self = torch.tril(text_self)
 
-    if mode == "uni_modal":
+    if mode == "uni_modal": # Q-former will learn image and text embeddings separately
         multimodal_cross_fn = torch.zeros
     else:
         multimodal_cross_fn = torch.ones

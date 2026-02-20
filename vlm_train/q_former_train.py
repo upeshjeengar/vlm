@@ -26,9 +26,9 @@ train_loader, test_loader = get_dataloaders(batch_size=batch_size)
 
 def calculate_clip_loss(v, t, tau=0.07):
     N = v.size(0)
-    v = F.normalize(v, dim=1)
-    t = F.normalize(t, dim=1)
-    logits = v @ t.t() / tau   # (N, N)
+    v = F.normalize(v, dim=1) #image embeddings
+    t = F.normalize(t, dim=1) # text embeddings
+    logits = v @ t.t() / tau   # (N, N), tau temperature
     labels = torch.arange(N, device=logits.device)
     loss_i2t = F.cross_entropy(logits, labels) # rows: image->text
     loss_t2i = F.cross_entropy(logits.t(), labels) # cols: text->image
