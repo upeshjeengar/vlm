@@ -19,7 +19,7 @@ device = (
 # -------------------------
 # Config
 # -------------------------
-IMAGE_PATH = "test.png"
+IMAGE_PATH = "image.png"
 BASE_MODEL = "HuggingFaceTB/SmolLM-135M-Instruct"
 CHECKPOINT_PATH = "models/vlm_peft/best"
 QFORMER_PATH = "models/trained_qformer/best"
@@ -69,7 +69,7 @@ with torch.no_grad():
 prompt = tokenizer.apply_chat_template(
     [
         {"role": "system", "content": "Answer the user's question truthfully"},
-        {"role": "user", "content": "Describe this image in detail."},
+        {"role": "user", "content": "what is the color of rose?"},
     ],
     return_tensors="pt",
 ).to(device)
@@ -87,7 +87,7 @@ with torch.no_grad():
 # -------------------------
 # Decode
 # -------------------------
-output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+output_text = tokenizer.decode(output_ids[0], skip_special_tokens=False)
 
 print("\n=== GENERATED OUTPUT ===\n")
 print(output_text)

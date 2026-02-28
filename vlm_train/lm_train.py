@@ -1,4 +1,6 @@
-from dataset.lm_dataloader import get_dataloader
+from dataset.roco_dataloader import ROCODataset
+from dataset.lm_dataloader import ROCOLMDataset
+from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
 import os
@@ -31,12 +33,56 @@ if __name__ == "__main__":
 
     model_id = "vlm_peft"
     model_name = "HuggingFaceTB/SmolLM-135M-Instruct"
-
-    train_loader, test_loader = get_dataloader(batch_size=8, tokenizer_name=model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+
+    # Training dataset
+    base_train_dataset = ROCODataset(
+        image_dir="train",
+        captions_csv="dataset/train_captions.csv",
+        max_samples=50000,
+        use_vit=True,
+    )
+
+    train_dataset = ROCOLMDataset(
+        base_train_dataset,
+        tokenizer,
+    )
+
+    # Test dataset
+    base_test_dataset = ROCODataset(
+        image_dir="test",
+        captions_csv="dataset/test_captions.csv",
+        max_samples=500,
+        use_vit=True,
+    )
+
+    test_dataset = ROCOLMDataset(
+        base_test_dataset,
+        tokenizer,
+    )
+
+    # Create collator for proper batching
+    from dataset.lm_dataloader import LMCollator
+    collator = LMCollator(tokenizer)
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=8,
+        shuffle=True,
+        num_workers=4,
+        collate_fn=collator,
+    )
+
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=8,
+        shuffle=False,
+        num_workers=4,
+        collate_fn=collator,
+    )
 
     pad_token_id = tokenizer.pad_token_id
     model = LM_2_VLM(

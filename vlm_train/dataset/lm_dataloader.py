@@ -17,7 +17,66 @@ device = (
     if torch.cuda.is_available()
     else ("mps" if torch.backends.mps.is_available() else "cpu")
 )
+import torch
+from torch.utils.data import Dataset
 
+class ROCOLMDataset(Dataset):
+    def __init__(self, base_dataset, tokenizer, system_prompt="Answer the user's question truthfully"):
+        self.base_dataset = base_dataset
+        self.tokenizer = tokenizer
+        self.system_prompt = system_prompt
+
+        self.prompts = [
+            "Tell me about this medical image:",
+            "Describe this medical picture.",
+            "What do you see in this medical image?",
+            "Provide a description of the medical photo.",
+            "Can you explain what is shown in this medical scan?",
+            "What is in this medical image?",
+            "Describe the contents of this medical image.",
+            "Give me a summary of what's shown in this scan.",
+            "What can you see in this medical image?",
+            "Explain the visual content of this medical image.",
+            "Describe this medical image in detail.",
+            "What's shown in this medical photo?",
+        ]
+
+    def __len__(self):
+        return len(self.base_dataset)
+
+    def __getitem__(self, idx):
+        # base_dataset returns (visual_feats, text_dict)
+        visual_feats, text_dict = self.base_dataset[idx]
+        caption = self.tokenizer.decode(text_dict["input_ids"], skip_special_tokens=True)
+
+        random_prompt = random.choice(self.prompts)
+        user_prompt = self.tokenizer.apply_chat_template(
+            [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": random_prompt},
+            ],
+            return_tensors="pt",
+        )
+
+        assistant_prompt = self.tokenizer.apply_chat_template(
+            [{"role": "assistant", "content": caption}],
+            return_tensors="pt",
+            add_generation_prompt=False,
+        )
+
+        # Ensure sequence ends with EOS token
+        eos_positions = (assistant_prompt[0] == self.tokenizer.eos_token_id).nonzero(
+            as_tuple=True
+        )[0]
+        if len(eos_positions) > 0:
+            last_eos_idx = eos_positions[-1].item()
+            assistant_prompt = assistant_prompt[:, : last_eos_idx + 1]
+
+        return {
+            "image": visual_feats,  # [197, 768]
+            "prefix": user_prompt.squeeze(0),  # Remove batch dim
+            "assistant_prompt": assistant_prompt.squeeze(0),  # Remove batch dim
+        }
 
 @dataclass(frozen=True)
 class CCExample:
@@ -44,7 +103,7 @@ class LMDataset(Dataset):
         self.index_parquet = Path(dataset_root, "conceptual-captions-200k.parquet")
 
         self.vit_processor = ViTImageProcessor.from_pretrained(vit_model)
-        self.vit_model = ViTModel.from_pretrained(vit_model)
+        self.vit_model = ViTModel.from_pretrained(vit_model, add_pooling_layer=False)
         self.vit_model.to(device)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
 
