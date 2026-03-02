@@ -27,13 +27,14 @@ train_dataset = ROCODataset(
     captions_csv="dataset/train_captions.csv",
     max_samples=50000,
     use_vit=True,
+    device=device,
 )
 
 train_loader = DataLoader(
     train_dataset,
-    batch_size=8,
+    batch_size=80,
     shuffle=True,
-    num_workers=4,
+    num_workers=0,  # Set to 0 for macOS/MPS compatibility
 )
 
 test_dataset = ROCODataset(
@@ -41,13 +42,14 @@ test_dataset = ROCODataset(
     captions_csv="dataset/test_captions.csv",
     max_samples=500,
     use_vit=True,
+    device=device,
 )
 
 test_loader = DataLoader(
     test_dataset,
-    batch_size=8,
+    batch_size=80,
     shuffle=False,
-    num_workers=4,
+    num_workers=0,  # Set to 0 for macOS/MPS compatibility
 )
 def calculate_clip_loss(v, t, tau=0.07):
     N = v.size(0)
@@ -67,12 +69,11 @@ def run_inference(limit_batches=20):
         for i, (img, txt) in enumerate(test_loader):
             if i >= limit_batches:
                 break
-            
-            # Ensure data is on the correct device
-            img = img.to(device)
+
+            # Data is already on device from dataset, but move text to device if needed
             if isinstance(txt, dict):
                 txt = {k: v.to(device) for k, v in txt.items()}
-            
+
             img_emb, txt_emb = qformer(
                 visual_feats=img, 
                 text_input_ids=txt["input_ids"],
@@ -110,8 +111,7 @@ if __name__ == '__main__':
         for (img, txt) in pbar:
             steps += 1
 
-            # Ensure data is on the correct device
-            img = img.to(device)
+            # Data is already on device from dataset, but move text to device if needed
             if isinstance(txt, dict):
                 txt = {k: v.to(device) for k, v in txt.items()}
 

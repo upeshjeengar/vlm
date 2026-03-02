@@ -17,19 +17,21 @@ class ROCODataset(Dataset):
         max_length=128,
         vit_model='google/vit-base-patch16-224',
         use_vit=True,
+        device='cpu',
     ):
         self.image_dir = image_dir
         self.df = pd.read_csv(captions_csv)
         self.use_vit = use_vit
+        self.device = device
 
         if max_samples:
             self.df = self.df.iloc[:max_samples]
 
         if use_vit:
             self.vit_processor = ViTImageProcessor.from_pretrained(vit_model)
-            # Keep ViT on CPU to avoid multiprocessing issues
-            # Add add_pooling_layer=False since we only use last_hidden_state
+            # Move ViT to specified device for faster inference (requires num_workers=0)
             self.vit_model = ViTModel.from_pretrained(vit_model, add_pooling_layer=False)
+            self.vit_model.to(device)
             self.vit_model.eval()
         else:
             self.transform = transform or transforms.Compose([
@@ -60,11 +62,13 @@ class ROCODataset(Dataset):
         image = Image.open(image_path).convert("RGB")
 
         if self.use_vit:
-            # Process with ViT to get visual features (on CPU for multiprocessing compatibility)
+            # Process with ViT to get visual features on device
             with torch.no_grad():
                 image_inputs = self.vit_processor(images=image, return_tensors="pt")
+                # Move inputs to device
+                image_inputs = {k: v.to(self.device) for k, v in image_inputs.items()}
                 visual_feats = self.vit_model(**image_inputs).last_hidden_state  # [1, 197, 768]
-                visual_feats = visual_feats.squeeze(0).cpu()  # [197, 768] on CPU
+                visual_feats = visual_feats.squeeze(0)  # [197, 768], stays on device
         else:
             visual_feats = self.transform(image)
 

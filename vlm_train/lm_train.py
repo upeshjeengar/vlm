@@ -44,6 +44,7 @@ if __name__ == "__main__":
         captions_csv="dataset/train_captions.csv",
         max_samples=50000,
         use_vit=True,
+        device=device,
     )
 
     train_dataset = ROCOLMDataset(
@@ -57,6 +58,7 @@ if __name__ == "__main__":
         captions_csv="dataset/test_captions.csv",
         max_samples=500,
         use_vit=True,
+        device=device,
     )
 
     test_dataset = ROCOLMDataset(
@@ -70,9 +72,9 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=8,
+        batch_size=20,
         shuffle=True,
-        num_workers=4,
+        num_workers=0,
         collate_fn=collator,
     )
 
@@ -80,7 +82,7 @@ if __name__ == "__main__":
         test_dataset,
         batch_size=8,
         shuffle=False,
-        num_workers=4,
+        num_workers=0,
         collate_fn=collator,
     )
 

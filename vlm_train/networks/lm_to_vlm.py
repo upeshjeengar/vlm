@@ -1,5 +1,5 @@
 from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, AutoTokenizer
-from vlm_train.networks.q_former import QFormer
+from networks.q_former import QFormer
 import torch
 import torch.nn as nn
 import os
