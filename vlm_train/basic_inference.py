@@ -26,8 +26,9 @@ def main():
     
     # 1. Load Dataset (Handles ViT and Tokenizer)
     print("Loading dataset and ViT model...")
-    dataset = CCImageCaptionDataset(
-        tokenizer="distilbert/distilbert-base-uncased"
+    dataset = ROCOImageCaptionDataset(
+        image_dir="train",
+        captions_csv="dataset/train_captions.csv",
     )
     
     # 2. Load QFormer Model
