@@ -4,7 +4,7 @@ import os
 import random
 
 # Import project modules
-from dataset.cc_dataloader import CCImageCaptionDataset, get_dataloaders
+from dataset.cc_dataloader import ROCOImageCaptionDataset, get_dataloaders
 from networks.q_former import QFormer
 from utils.calculate_recall import calculate_recall
 from utils.utils import *
