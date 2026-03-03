@@ -66,7 +66,8 @@ def run_inference(limit_batches=20):
     qformer.eval()
     losses = []
     with torch.no_grad():
-        for i, (img, txt) in enumerate(test_loader):
+        for i, batch in enumerate(test_loader):
+            img, txt = batch[0], batch[1]  # Unpack first 2 elements, ignore caption
             if i >= limit_batches:
                 break
 
@@ -108,7 +109,8 @@ if __name__ == '__main__':
     for epoch in range(10):
         train_losses = []
         pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}")
-        for (img, txt) in pbar:
+        for batch in pbar:
+            img, txt = batch[0], batch[1]  # Unpack first 2 elements, ignore caption
             steps += 1
 
             # Data is already on device from dataset, but move text to device if needed

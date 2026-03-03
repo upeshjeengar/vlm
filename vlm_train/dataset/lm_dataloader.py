@@ -45,9 +45,9 @@ class ROCOLMDataset(Dataset):
         return len(self.base_dataset)
 
     def __getitem__(self, idx):
-        # base_dataset returns (visual_feats, text_dict)
-        visual_feats, text_dict = self.base_dataset[idx]
-        caption = self.tokenizer.decode(text_dict["input_ids"], skip_special_tokens=True)
+        # base_dataset returns (visual_feats, text_dict, caption)
+        visual_feats, text_dict, caption = self.base_dataset[idx]
+        # Use the raw caption directly instead of decoding token IDs from a different tokenizer
 
         random_prompt = random.choice(self.prompts)
         user_prompt = self.tokenizer.apply_chat_template(

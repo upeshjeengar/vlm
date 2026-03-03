@@ -84,4 +84,5 @@ class ROCODataset(Dataset):
         # Remove batch dimension added by return_tensors='pt'
         text_inputs = {k: v.squeeze(0) for k, v in text_inputs.items()}
 
-        return visual_feats, text_inputs
+        # Also return the raw caption text for downstream use
+        return visual_feats, text_inputs, caption

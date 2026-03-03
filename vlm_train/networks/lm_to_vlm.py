@@ -152,22 +152,28 @@ class LM_2_VLM(nn.Module):
         top_p=0.9,
         repetition_penalty=1.2,
     ):
+        # Set model to eval mode
+        self.eval()
+
         img_emb, _ = self.qformer.encode_image(img)
         img_emb = self.adapter(img_emb)
         img_emb = img_emb.to(dtype=self.llm.dtype)
 
         prefix_emb = self.llm.get_input_embeddings()(prefix_ids)
+
+        # Get assistant role tokens (matching training format)
         assistant_part = self.tokenizer.apply_chat_template(
-            [{"role": "assistant", 
-              "content": ""}], 
-            add_generation_prompt=False)
+            [{"role": "assistant", "content": ""}],
+            add_generation_prompt=False
+        )
+        # Remove the EOS tokens at the end (last 2 tokens typically)
         assistant_part = torch.tensor(assistant_part[:-2], device=prefix_emb.device).repeat(prefix_emb.shape[0], 1)
         assistant_emb = self.llm.get_input_embeddings()(assistant_part)
 
-        inputs_embeds = torch.cat([prefix_emb, 
+        inputs_embeds = torch.cat([prefix_emb,
                                    img_emb,
-                                   assistant_emb
-                                   ], dim=1)
+                                   assistant_emb], dim=1)
+
         attention_mask = torch.ones(
             inputs_embeds.shape[:2], device=inputs_embeds.device, dtype=torch.long
         )

@@ -8,6 +8,7 @@ from dataset.cc_dataloader import ROCOImageCaptionDataset, get_dataloaders
 from networks.q_former import QFormer
 from utils.calculate_recall import calculate_recall
 from utils.utils import *
+from transformers import AutoTokenizer
 
 def main():
     # Setup device
@@ -27,8 +28,9 @@ def main():
     # 1. Load Dataset (Handles ViT and Tokenizer)
     print("Loading dataset and ViT model...")
     dataset = ROCOImageCaptionDataset(
-        image_dir="train",
-        captions_csv="dataset/train_captions.csv",
+        image_dir="test",
+        captions_csv="dataset/test_captions.csv",
+        tokenizer="distilbert-base-uncased",   # ← IMPORTANT
     )
     
     # 2. Load QFormer Model
