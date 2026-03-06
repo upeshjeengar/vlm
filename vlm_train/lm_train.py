@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=5,
+        batch_size=30,
         shuffle=True,
         num_workers=0,
         collate_fn=collator,
