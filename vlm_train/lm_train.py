@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=20,
+        batch_size=5,
         shuffle=True,
         num_workers=0,
         collate_fn=collator,
@@ -179,7 +179,7 @@ if __name__ == "__main__":
                 img = data["image"]
                 prefix = data["prefix"]
                 assistant = data["assistant_prompt"]
-
+                
                 with accelerator.autocast():
                     output = model(img, prefix, assistant)
                     loss = output.loss
