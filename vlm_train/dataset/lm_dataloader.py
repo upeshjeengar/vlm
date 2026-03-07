@@ -61,8 +61,30 @@ class ROCOLMDataset(Dataset):
         assistant_prompt = self.tokenizer.apply_chat_template(
             [{"role": "assistant", "content": caption}],
             return_tensors="pt",
+            return_dict=False,
             add_generation_prompt=False,
         )
+
+        # Handle Dict-like or BatchEncoding return values from apply_chat_template
+        if hasattr(user_prompt, "get") and "input_ids" in user_prompt:
+            user_prompt = user_prompt["input_ids"]
+        elif hasattr(user_prompt, "input_ids"):
+            user_prompt = getattr(user_prompt, "input_ids")
+            
+        if hasattr(assistant_prompt, "get") and "input_ids" in assistant_prompt:
+            assistant_prompt = assistant_prompt["input_ids"]
+        elif hasattr(assistant_prompt, "input_ids"):
+            assistant_prompt = getattr(assistant_prompt, "input_ids")
+
+        if not isinstance(user_prompt, torch.Tensor):
+            user_prompt = torch.tensor(user_prompt)
+        if not isinstance(assistant_prompt, torch.Tensor):
+            assistant_prompt = torch.tensor(assistant_prompt)
+            
+        if user_prompt.ndim == 1:
+            user_prompt = user_prompt.unsqueeze(0)
+        if assistant_prompt.ndim == 1:
+            assistant_prompt = assistant_prompt.unsqueeze(0)
 
         # Ensure sequence ends with EOS token
         eos_positions = (assistant_prompt[0] == self.tokenizer.eos_token_id).nonzero(
@@ -191,20 +213,48 @@ class LMDataset(Dataset):
         image = image.squeeze(0)
 
         random_prompt = random.choice(self.prompts)
-        user_prompt = self.tokenizer.apply_chat_template(
+        user_prompt_list_or_tensor = self.tokenizer.apply_chat_template(
             [
                 {"role": "system", "content": "Answer the user's question truthfully"},
                 {"role": "user", "content": random_prompt},
             ],
             return_tensors="pt",
-        ).to(device)
+            return_dict=False,
+        )
 
-        assistant_prompt = self.tokenizer.apply_chat_template(
+        assistant_prompt_list_or_tensor = self.tokenizer.apply_chat_template(
             [{"role": "assistant", "content": caption}],
             return_tensors="pt",
+            return_dict=False,
             add_generation_prompt=False,
         )
 
+        if hasattr(user_prompt_list_or_tensor, "get") and "input_ids" in user_prompt_list_or_tensor:
+            user_prompt_list_or_tensor = user_prompt_list_or_tensor["input_ids"]
+        elif hasattr(user_prompt_list_or_tensor, "input_ids"):
+            user_prompt_list_or_tensor = getattr(user_prompt_list_or_tensor, "input_ids")
+            
+        if hasattr(assistant_prompt_list_or_tensor, "get") and "input_ids" in assistant_prompt_list_or_tensor:
+            assistant_prompt_list_or_tensor = assistant_prompt_list_or_tensor["input_ids"]
+        elif hasattr(assistant_prompt_list_or_tensor, "input_ids"):
+            assistant_prompt_list_or_tensor = getattr(assistant_prompt_list_or_tensor, "input_ids")
+
+        if not isinstance(user_prompt_list_or_tensor, torch.Tensor):
+            user_prompt = torch.tensor(user_prompt_list_or_tensor)
+        else:
+            user_prompt = user_prompt_list_or_tensor
+            
+        if not isinstance(assistant_prompt_list_or_tensor, torch.Tensor):
+            assistant_prompt = torch.tensor(assistant_prompt_list_or_tensor)
+        else:
+            assistant_prompt = assistant_prompt_list_or_tensor
+
+        if user_prompt.ndim == 1:
+            user_prompt = user_prompt.unsqueeze(0)
+        if assistant_prompt.ndim == 1:
+            assistant_prompt = assistant_prompt.unsqueeze(0)
+            
+        user_prompt = user_prompt.to(device)
         # Ensure sequence ends with EOS token (trim any trailing tokens like newlines)
         # Find the last occurrence of EOS token and truncate after it
         eos_positions = (assistant_prompt[0] == self.tokenizer.eos_token_id).nonzero(
@@ -230,7 +280,10 @@ class LMCollator:
         self.tokenizer = tokenizer
 
     def __call__(self, batch: List[Dict[str, Any]]) -> Dict[str, Any]:
-        images = [item["image"] for item in batch]
+        images = [
+            item["image"].unsqueeze(0) if item["image"].ndim == 1 else item["image"]
+            for item in batch
+        ]
 
         # Ensure 1D for padding
         prefixes = [

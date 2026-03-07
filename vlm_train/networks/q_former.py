@@ -166,7 +166,9 @@ class QFormer(nn.Module):
         x = self.query_embeddings.expand(B, -1, -1)  # (B, Q, H)
         for i, layer in enumerate(self.encoder_layers):
 
-            x = layer(x)[0]
+            layer_out = layer(x)
+            x = layer_out[0] if isinstance(layer_out, tuple) else layer_out
+            
             if str(i) in self.cross_blocks:
                 x = self.cross_blocks[str(i)](x, visual_feats)
 
@@ -200,7 +202,8 @@ class QFormer(nn.Module):
 
         for i, layer in enumerate(self.encoder_layers):
 
-            x = layer(x, attention_mask)[0]
+            layer_out = layer(x, attention_mask)
+            x = layer_out[0] if isinstance(layer_out, tuple) else layer_out
             if str(i) in self.cross_blocks:
                 queries = x[:, -self.n_queries :]
                 txt_emb = x[:, : -self.n_queries]
