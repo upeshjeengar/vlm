@@ -1,3 +1,4 @@
+pip install pandas peft torchvision pyarrow pillow
 # Vision-Language Model (VLM) Training
 
 A PyTorch implementation for training vision-language models from scratch using Q-Former architecture and small language models. This project demonstrates how to build a complete VLM pipeline that can understand and describe images.
